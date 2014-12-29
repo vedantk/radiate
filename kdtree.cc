@@ -37,7 +37,7 @@ void KDNode::Destroy()
 
 KDTree::~KDTree()
 {
-    for (size_t i=0; i < kd_vec.size(); ++i) {
+    for (size_t i = 0; i < kd_vec.size(); ++i) {
         kd_vec[i].kdsplit.Destroy();
     }
 }
@@ -140,7 +140,7 @@ static float kd_eval_sah(Mesh& tris, float split, int axis)
     BoundingBox rightbb;
     BoundingBox whole;
 
-    for (size_t i=0; i < tris.size(); ++i) {
+    for (size_t i = 0; i < tris.size(); ++i) {
         Triangle* T = tris[i];
         if (kd_on_left(T, split, axis)) {
             ++lcnt;
@@ -174,7 +174,7 @@ static float kd_exact_sah(Mesh& tris, float& best_split, int& best_axis,
     Vector3f widths = box.top - box.bottom;
     best_axis = max_axis(widths);
 
-    for (size_t i=0; i < tris.size(); ++i) {
+    for (size_t i = 0; i < tris.size(); ++i) {
         Triangle* T = tris[i];
 
         float sah = kd_eval_sah(tris, T->v1[best_axis], best_axis);
@@ -200,7 +200,7 @@ static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
                             BoundingBox& box)
 {
     float best_sah = INFINITY;
-    for (int axis=KD_X; axis < KD_NONE; ++axis) {
+    for (int axis = KD_X; axis < KD_NONE; ++axis) {
         float hi = box.top[axis];
         float lo = box.bottom[axis];
         float width = hi - lo;
@@ -211,7 +211,7 @@ static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
         // Sample the axis interval evenly.
         vector<SampleSAH> samples;
         samples.reserve(KD_QUAD_SAMPLES * 3);
-        for (int i=1; i <= KD_QUAD_SAMPLES; ++i) {
+        for (int i = 1; i <= KD_QUAD_SAMPLES; ++i) {
             float pos = lo + i*alpha;
             float sah = kd_eval_sah(tris, pos, axis);
             samples.push_back(make_pair(pos, sah));
@@ -228,7 +228,7 @@ static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
         // Add samples wherever appreciable changes in Range{SAH} occur.
         float sah_range = max_sah - min_sah;
         float sah_thresh = sah_range / NR_SEGMENTS;
-        for (int i=0; i < NR_SEGMENTS; ++i) {
+        for (int i = 0; i < NR_SEGMENTS; ++i) {
             float prev_sah = i == 0 ?
                              tris.size() : samples[i-1].second;
             float next_sah = i == KD_QUAD_SAMPLES ?
@@ -237,7 +237,7 @@ static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
 
             float seg0 = lo + i*alpha;
             float beta = alpha / (nr_extra + 1);
-            for (int j=1; j <= nr_extra; ++j) {
+            for (int j = 1; j <= nr_extra; ++j) {
                 float pos = seg0 + j*beta;
                 float sah = kd_eval_sah(tris, pos, axis);
                 samples.push_back(make_pair(pos, sah));
@@ -258,7 +258,7 @@ static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
             });
 
         // Find extrema by interpolating point triples, update the best split.
-        for (size_t i=0; i <= samples.size() - 3; ++i) {
+        for (size_t i = 0; i <= samples.size() - 3; ++i) {
             float x1 = samples[i].first;
             float x2 = samples[i+1].first;
             float x3 = samples[i+2].first;
@@ -308,7 +308,7 @@ static bool kd_mesh_split(KDNode* cur, Mesh& tris, Mesh& right_tris,
     cur->parent.split_pos = best_split;
     right_tris.reserve(tris.size() / 2);
 
-    for (size_t i=0; i < tris.size(); ++i) {
+    for (size_t i = 0; i < tris.size(); ++i) {
         Triangle* T = tris[i];
         bool on_left = kd_on_left(T, best_split, best_axis);
         bool on_right = kd_on_right(T, best_split, best_axis);
@@ -353,7 +353,7 @@ void KDTree::kd_build(uint32_t cur_idx, Mesh& tris)
         total_leaf_tris += tris.size();
 
         cur->tris = new Triangle*[tris.size()];
-        for (size_t i=0; i < tris.size(); ++i) {
+        for (size_t i = 0; i < tris.size(); ++i) {
             if (i == tris.size() - 1) {
                 cur->tris[i] = tris[i];
             } else {
