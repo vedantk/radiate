@@ -1,0 +1,67 @@
+Radiate
+=======
+
+Radiate is a primitive ray tracer, optimized for large triangle meshes. It
+(will) support global illumination through radiosity.
+
+To do
+=====
+
+- Radiosity solver
+- Basic testing (e.g dragon, lucy, etc.)
+- Reflection stack
+- Phong shading, switch b/w ambient term & radiosity
+- Texture-map triangles
+- Load textures / lights from model files
+
+References
+==========
+
+[1] Fast kd-tree Construction with an Adaptive Error-Bounded Heuristic
+Hunt, Mark, Stoll.
+
+[2] Fast Ray Tracing Using K-D Trees.
+Fussell, Subramaniam.
+
+[3] A Practical Guide to Global Illumination Using Photon Mapping
+Siggraph 2002 Course 43, Jensen et. al.
+
+[4] On building fast kd-Trees for Ray Tracing, and on doing that in O(N log N)
+Wald, Havran.
+
+[5] Heuristic Ray Shooting Algorithms
+Havran.
+
+[6] Realtime Ray Tracing and Interactive Global Illumination
+Wald.
+
+[7] Multi-Level Ray Tracing Algorithm
+Reshetov, Soupikov, Hurley.
+
+[8] State of the Art in Interactive Ray Tracing
+Wald, Slusallek.
+
+[9] Cache Sensitive Representation for BSP Trees
+Havran.
+
+[10] Fast, Minimum Storage Ray/Triangle Intersection
+Möller, Trumbore.
+
+[11] flipcode.com - Raytracing Topics and Techniques
+Bikker, a.k.a "The Phantom".
+
+[12] Practical Global Illumination with Irradiance Caching
+Jaroslav Kˇrivánek and Pascal Gautron, 2009
+
+[13] A Survey of Photon Mapping for Realistic Image Synthesis
+Justin L. Shumaker, 2005
+
+License
+=======
+
+GPLv3
+
+Author
+======
+
+Vedant Kumar <vsk@berkeley.edu>

@@ -1,20 +1,25 @@
 #pragma once
 
 #include <cmath>
-#include <cstdint>
+#include <string>
 #include <limits>
-#include <vector>
+#include <cstdio>
+#include <cstdint>
 
-#include <Eigen/Dense>
+#include "radiate/aux.hh"
 
-using Eigen::Vector3f;
-using Eigen::Vector4f;
+namespace Radiate
+{
 
-typedef Vector3f Point3f;
-
-#define ZEROV Point3f(0.f, 0.f, 0.f)
+#define ZEROV Point3f(0.0, 0.0, 0.0)
 #define INFTYV Point3f(INFINITY, INFINITY, INFINITY)
 #define EPSILON 1e-8
+
+static inline void xerr(std::string s)
+{
+    fprintf(stderr, "fatal: %s\n", s.c_str());
+    exit(1);
+}
 
 static inline float square(float x)
 {
@@ -44,3 +49,69 @@ static inline int max_axis(Vector3f& v)
         return (v[1] > v[2]) ? 1 : 2;
     }
 }
+
+struct Ray
+{
+    Point3f O;
+    Vector3f D; // ||D|| = 1
+
+    Ray(Point3f origin, Vector3f direction)
+        : O(origin),
+          D(direction.normalized())
+    {}
+
+    inline Point3f getPoint(float t) { return O + t*D; }
+};
+
+struct Triangle
+{
+    Point3f v1, v2, v3;
+    Vector3f e1; // v2 - v1
+    Vector3f e2; // v3 - v1
+    Vector3f normal; // e1 x e2, s.t ||n|| = 1
+
+    // Initialize the given triangle.
+    static void Init(Triangle* T, Point3f _v1, Point3f _v2, Point3f _v3);
+
+    // Allocate a triangle from an object pool, then initialize it.
+    static Triangle* Create(Point3f _v1, Point3f _v2, Point3f _v3);
+
+    bool Intersect(Ray& ray, float* t);
+};
+
+struct BoundingBox
+{
+    Point3f top;
+    Point3f bottom;
+
+    BoundingBox()
+        : top(-INFTYV),
+          bottom(INFTYV)
+    {}
+
+    void Add(Point3f& pt);
+
+    void Add(Triangle* T);
+
+    void Add(Mesh& mesh);
+
+    // Compute δxδy + δxδz + δyδz.
+    float HalfSurfaceArea();
+};
+
+struct BoundingSphere
+{
+    Point3f center;
+    float rsquared;
+
+    BoundingSphere()
+        : center(ZEROV),
+          rsquared(0.0)
+    {}
+
+    void Add(BoundingBox& bbox);
+
+    bool Intersect(Ray& ray);
+};
+
+}; // end namespace Radiate
