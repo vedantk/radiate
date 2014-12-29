@@ -11,7 +11,7 @@ static void usage(char* prgm)
                     "\n"
                     "Options:\n"
                     "    [-in        <input-mesh>]\n"
-                    "    [-out       <output-file = out.png>]\n"
+                    "    [-out       <output-file>]\n"
                     "    [-width     <img-pixel-width = 1920>]\n"
                     "    [-height    <img-pixel-height = 1080>]\n"
                     "    [-per-pixel <pixel-to-world = 0.001>]\n"

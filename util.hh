@@ -15,11 +15,9 @@ namespace Radiate
 #define INFTYV Point3f(INFINITY, INFINITY, INFINITY)
 #define EPSILON 1e-8
 
-static inline void xerr(std::string s)
-{
-    fprintf(stderr, "fatal: %s\n", s.c_str());
-    exit(1);
-}
+void xerr(std::string s);
+
+void printv(Vector3f& v);
 
 static inline float square(float x)
 {

@@ -7,7 +7,7 @@ namespace Radiate
 
 struct pixel
 {
-    uint8_t r, g, b, a;
+    uint8_t b, g, r, a;
 };
 
 class KDTree;
@@ -26,7 +26,7 @@ public:
     void Resize(int h, int w);
 
     // Get the r-th row from the bottom of the image.
-    struct pixel* getRow(int r);
+    struct pixel* getScanline(int r);
 
     // Write the image.
     void Write(char* out_path);

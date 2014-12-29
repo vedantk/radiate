@@ -1,5 +1,3 @@
-#include <algorithm>
-
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -11,8 +9,6 @@
 
 namespace Radiate
 {
-
-using std::min;
 
 PixelBuffer::~PixelBuffer()
 {
@@ -29,7 +25,7 @@ void PixelBuffer::Resize(int h, int w)
         FreeImage_Unload(fip);
     }
 
-    fip = FreeImage_Allocate(h, w, 32, FI_RGBA_RED_MASK, FI_RGBA_BLUE_MASK,
+    fip = FreeImage_Allocate(w, h, 32, FI_RGBA_RED_MASK, FI_RGBA_BLUE_MASK,
             FI_RGBA_GREEN_MASK);
     assert(FreeImage_GetLine(fip) / FreeImage_GetWidth(fip) == sizeof(pixel));
     if (!fip) {
@@ -39,7 +35,7 @@ void PixelBuffer::Resize(int h, int w)
     buf = (void*) fip;
 }
 
-struct pixel* PixelBuffer::getRow(int r)
+struct pixel* PixelBuffer::getScanline(int r)
 {
     FIBITMAP* fip = (FIBITMAP*) buf;
     return (struct pixel*) FreeImage_GetScanLine(fip, r);
@@ -54,8 +50,8 @@ void PixelBuffer::Write(char* out_path)
 }
 
 SceneManager::SceneManager()
-    : width(800),
-      height(600),
+    : width(1920),
+      height(1080),
       per_pixel(0.001),
       eye(ZEROV),
       window(ZEROV),
@@ -115,6 +111,7 @@ void SceneManager::Add(char* in_path)
 {
     // Load the scene, then deallocate it.
     {
+        printf(":: Loading mesh %s...\n", in_path);
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile((const char*) in_path,
                                                  aiProcess_Triangulate);
@@ -141,7 +138,7 @@ void SceneManager::Add(char* in_path)
         // tan(φ) = (Wy/2)/(Bz-Ez) => Ez = Bz-(Wy/2)/tan(φ), with φ = π/5.
         float phi = M_PI / 5.0;
         eye[2] = Bz - ((Wy / 2.0) / tan(phi));
-        window[2] = 0.995 * eye[2];
+        window[2] = eye[2] + 0.05 * (Bz - eye[2]);
     }
 
     if (!checkViewConsistency()) {
@@ -235,11 +232,29 @@ void SceneManager::Render()
     Vector3f horiz_step = (horiz_size / width) * side;
     Vector3f vert_step = (-vert_size / height) * up;
 
-    for (int r = height - 1; r >= 0; --r) {
-        float pctg = 100.0 * float(height - r) / float(height);
-        printf("Render: %.3f%% done.\n", pctg);
+    printf("--------------------------------------------------------------\n");
+    printf("Scene configuration:\n");
+    printf(" - in     = "); printv(in); printf("\n");
+    printf(" - side   = "); printv(side); printf("\n");
+    printf(" - up     = "); printv(up); printf("\n");
+    printf(" - eye    = "); printv(eye); printf("\n");
+    printf(" - window = "); printv(window); printf("\n");
+    printf(" - bbox.B = "); printv(bbox->bottom); printf("\n");
+    printf(" - bbox.T = "); printv(bbox->top); printf("\n");
+    printf(" - win.TL = "); printv(TL); printf("\n");
+    printf(" - win.up = "); printv(half_vert); printf("\n");
+    printf(" - win.-> = "); printv(half_horiz); printf("\n");
+    printf("--------------------------------------------------------------\n");
 
-        struct pixel* line = pixbuf.getRow(r);
+    float last_pctg = 0.0;
+    for (int r = 0; r < height; ++r) {
+        float pctg = (100.0 * r) / height;
+        if (pctg - last_pctg >= 1.0) {
+            printf("Render: %.3f%% done.\n", pctg);
+            last_pctg = pctg;
+        }
+
+        struct pixel* line = pixbuf.getScanline(height - r - 1);
 
 #pragma omp parallel for
         for (int c = 0; c < width; ++c) {
@@ -262,12 +277,13 @@ void SceneManager::Render()
                 Vector4f color = (ambient * alight) + (diffuse * dlight)
                                + (specular * slight);
 
-                line[c].r = uint8_t(min(255.0, double(color[0])));
-                line[c].g = uint8_t(min(255.0, double(color[1])));
-                line[c].b = uint8_t(min(255.0, double(color[2])));
+                line[c].r = uint8_t(color[0]);
+                line[c].g = uint8_t(color[1]);
+                line[c].b = uint8_t(color[2]);
                 line[c].a = 255;
             } else {
-                line[c].r = line[c].g = line[c].b = 0;
+                line[c].r = 128;
+                line[c].g = line[c].b = 0;
                 line[c].a = 255;
             }
         }

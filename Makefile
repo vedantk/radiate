@@ -22,6 +22,9 @@ build/%.o: %.cc $(HEADERS)
 clean:
 	rm -rf build
 
+test: build/radiate
+	./test/render_*.sh
+
 all-pgo:
 	make clean
 	make NDEBUG_FLAGS="$(NDEBUG_FLAGS) $(GEN_PROFILE)"

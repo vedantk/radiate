@@ -8,6 +8,17 @@ namespace Radiate
 
 using namespace std;
 
+void xerr(std::string s)
+{
+    fprintf(stderr, "fatal: %s\n", s.c_str());
+    exit(1);
+}
+
+void printv(Vector3f& v)
+{
+    printf("(%.3f, %.3f, %.3f)", v[0], v[1], v[2]);
+}
+
 static boost::object_pool<Triangle> TrianglePool;
 
 void Triangle::Init(Triangle* T, Point3f _v1, Point3f _v2, Point3f _v3)
