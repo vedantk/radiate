@@ -19,6 +19,8 @@ void xerr(std::string s);
 
 void printv(Vector3f& v);
 
+void printvln(Vector3f& v);
+
 static inline float square(float x)
 {
     return x * x;
@@ -92,6 +94,8 @@ struct BoundingBox
     void Add(Triangle* T);
 
     void Add(Mesh& mesh);
+
+    void Add(BoundingBox& box);
 
     // Compute δxδy + δxδz + δyδz.
     float HalfSurfaceArea();

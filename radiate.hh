@@ -26,7 +26,7 @@ public:
     void Resize(int h, int w);
 
     // Get the r-th row from the bottom of the image.
-    struct pixel* getScanline(int r);
+    struct pixel* getScanline(int y);
 
     // Write the image.
     void Write(char* out_path);
@@ -43,7 +43,7 @@ public:
     ~SceneManager();
 
     // Add a new mesh into the scene.
-    void Add(char* in_path);
+    void AddMesh(char* in_path);
 
     // Get the dimensions (in pixels) of the final image.
     void getDimensions(int* h, int* w);
@@ -55,13 +55,13 @@ public:
     bool checkViewConsistency();
 
     // Find the current viewing frustrum configuration.
-    void getView(float* pp, Point3f* _eye, Point3f* _window, Vector3f* _up,
-            bool* _do_ortho);
+    void getView(float* f, float* pp, Point3f* _eye, Point3f* _window,
+            Vector3f* _up, bool* _do_ortho);
 
     // Optional viewing frustrum configuration. This overrides any
     // automatically selected viewing parameters.
-    void setView(float pp, Point3f& _eye, Point3f& _window, Vector3f& _up,
-            bool _do_ortho);
+    void setView(float f, float pp, Point3f& _eye, Point3f& _window,
+            Vector3f& _up, bool _do_ortho);
 
     // Find the bounding box of the scene, s.t top-bottom is the box diagonal.
     void getBoundingBox(Point3f* bottom, Point3f* top);
@@ -75,6 +75,7 @@ public:
 private:
     int width;
     int height;
+    float focal;
     float per_pixel;
     Point3f eye;
     Point3f window;

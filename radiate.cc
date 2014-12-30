@@ -35,10 +35,10 @@ void PixelBuffer::Resize(int h, int w)
     buf = (void*) fip;
 }
 
-struct pixel* PixelBuffer::getScanline(int r)
+struct pixel* PixelBuffer::getScanline(int y)
 {
     FIBITMAP* fip = (FIBITMAP*) buf;
-    return (struct pixel*) FreeImage_GetScanLine(fip, r);
+    return (struct pixel*) FreeImage_GetScanLine(fip, y);
 }
 
 void PixelBuffer::Write(char* out_path)
@@ -52,7 +52,8 @@ void PixelBuffer::Write(char* out_path)
 SceneManager::SceneManager()
     : width(1920),
       height(1080),
-      per_pixel(0.001),
+      focal(0.05),
+      per_pixel(0.0),
       eye(ZEROV),
       window(ZEROV),
       up(Vector3f(0, 1, 0)),
@@ -107,7 +108,7 @@ static void fill_mesh(Mesh& tris, const aiScene* scene, BoundingBox* bbox)
     }
 }
 
-void SceneManager::Add(char* in_path)
+void SceneManager::AddMesh(char* in_path)
 {
     // Load the scene, then deallocate it.
     {
@@ -138,11 +139,15 @@ void SceneManager::Add(char* in_path)
         // tan(φ) = (Wy/2)/(Bz-Ez) => Ez = Bz-(Wy/2)/tan(φ), with φ = π/5.
         float phi = M_PI / 5.0;
         eye[2] = Bz - ((Wy / 2.0) / tan(phi));
-        window[2] = eye[2] + 0.05 * (Bz - eye[2]);
+        window[2] = eye[2] + focal * (Bz - eye[2]);
+
+        // Now find the size of the viewing window. Start with φ:
+        // tan(φ) = (dh/2)/(Wz - Ez) => dh = 2(Wz - Ez)tan(φ)
+        per_pixel = 2.0*(window[2] - eye[2])*tan(phi)/height;
     }
 
     if (!checkViewConsistency()) {
-        xerr("inconsistent viewing frustrum");
+        xerr("unable to correct viewing frustrum");
     }
 }
 
@@ -172,12 +177,14 @@ bool SceneManager::checkViewConsistency()
         && fequal(in.dot(up), 0.0)
         && fequal(up.dot(side), 0.0)
         && fequal(side.dot(in), 0.0)
+        && !fequal(focal, 0.0)
         && per_pixel > 0.0;
 }
 
-void SceneManager::getView(float* pp, Point3f* _eye, Point3f* _window,
-        Vector3f* _up, bool* _do_ortho)
+void SceneManager::getView(float* f, float* pp, Point3f* _eye,
+        Point3f* _window, Vector3f* _up, bool* _do_ortho)
 {
+    *f = focal;
     *pp = per_pixel;
     *_eye = eye;
     *_window = window;
@@ -185,9 +192,10 @@ void SceneManager::getView(float* pp, Point3f* _eye, Point3f* _window,
     *_do_ortho = do_orthographic;
 }
 
-void SceneManager::setView(float pp, Point3f& _eye, Point3f& _window,
-        Vector3f& _up, bool _do_ortho)
+void SceneManager::setView(float f, float pp, Point3f& _eye,
+        Point3f& _window, Vector3f& _up, bool _do_ortho)
 {
+    focal = f;
     per_pixel = pp;
     eye = _eye;
     window = _window;
@@ -234,16 +242,18 @@ void SceneManager::Render()
 
     printf("--------------------------------------------------------------\n");
     printf("Scene configuration:\n");
-    printf(" - in     = "); printv(in); printf("\n");
-    printf(" - side   = "); printv(side); printf("\n");
-    printf(" - up     = "); printv(up); printf("\n");
-    printf(" - eye    = "); printv(eye); printf("\n");
-    printf(" - window = "); printv(window); printf("\n");
-    printf(" - bbox.B = "); printv(bbox->bottom); printf("\n");
-    printf(" - bbox.T = "); printv(bbox->top); printf("\n");
-    printf(" - win.TL = "); printv(TL); printf("\n");
-    printf(" - win.up = "); printv(half_vert); printf("\n");
-    printf(" - win.-> = "); printv(half_horiz); printf("\n");
+    printf(" - in     = "); printvln(in);
+    printf(" - side   = "); printvln(side);
+    printf(" - up     = "); printvln(up);
+    printf(" - eye    = "); printvln(eye);
+    printf(" - window = "); printvln(window);
+    printf(" - bbox.B = "); printvln(bbox->bottom);
+    printf(" - bbox.T = "); printvln(bbox->top);
+    printf(" - win.TL = "); printvln(TL);
+    printf(" - win.up = "); printvln(half_vert);
+    printf(" - win.-> = "); printvln(half_horiz);
+    printf(" - f/frac = %.9f\n", focal);
+    printf(" - d/pix  = %.9f\n", per_pixel);
     printf("--------------------------------------------------------------\n");
 
     float last_pctg = 0.0;
@@ -282,7 +292,7 @@ void SceneManager::Render()
                 line[c].b = uint8_t(color[2]);
                 line[c].a = 255;
             } else {
-                line[c].r = 128;
+                line[c].r = 32;
                 line[c].g = line[c].b = 0;
                 line[c].a = 255;
             }

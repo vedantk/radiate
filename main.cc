@@ -14,7 +14,8 @@ static void usage(char* prgm)
                     "    [-out       <output-file>]\n"
                     "    [-width     <img-pixel-width = 1920>]\n"
                     "    [-height    <img-pixel-height = 1080>]\n"
-                    "    [-per-pixel <pixel-to-world = 0.001>]\n"
+                    "    [-focal     <focal-ratio = 0.01>]\n"
+                    "    [-per-pixel <pixel-to-world = auto]\n"
                     "    [-eye       <camera-origin (x, y, z) = auto]\n"
                     "    [-window    <window-origin (x, y, z) = auto]\n"
                     "    [-up        <up-vector (x, y, z) = (0, 1, 0)]\n"
@@ -41,12 +42,13 @@ int main(int argc, char** argv)
     int height, width;
     mgr.getDimensions(&height, &width);
 
+    float focal;
     float per_pixel;
     Point3f eye;
     Point3f window;
     Vector3f up;
     bool do_orthographic;
-    mgr.getView(&per_pixel, &eye, &window, &up, &do_orthographic);
+    mgr.getView(&focal, &per_pixel, &eye, &window, &up, &do_orthographic);
 
     for (int i = 1; (i + 1) < argc; i += 2) {
 #define OPT(s) (strcmp(argv[i], s) == 0)
@@ -58,6 +60,8 @@ int main(int argc, char** argv)
             width = atoi(argv[i + 1]);
         } else if (OPT("-height")) {
             height = atoi(argv[i + 1]);
+        } else if (OPT("-focal")) {
+            focal = atof(argv[i + 1]);
         } else if (OPT("-per-pixel")) {
             per_pixel = atof(argv[i + 1]);
         } else if (OPT("-eye")) {
@@ -82,8 +86,8 @@ int main(int argc, char** argv)
 
     FreeImage_Initialise(false);
     mgr.setDimensions(height, width);
-    mgr.setView(per_pixel, eye, window, up, do_orthographic);
-    mgr.Add(in_path);
+    mgr.setView(focal, per_pixel, eye, window, up, do_orthographic);
+    mgr.AddMesh(in_path);
     mgr.Render();
     mgr.getPixelBuffer()->Write(out_path);
     FreeImage_DeInitialise();

@@ -19,6 +19,12 @@ void printv(Vector3f& v)
     printf("(%.3f, %.3f, %.3f)", v[0], v[1], v[2]);
 }
 
+void printvln(Vector3f& v)
+{
+    printv(v);
+    printf("\n");
+}
+
 static boost::object_pool<Triangle> TrianglePool;
 
 void Triangle::Init(Triangle* T, Point3f _v1, Point3f _v2, Point3f _v3)
@@ -113,6 +119,12 @@ void BoundingBox::Add(Mesh& mesh)
     for (size_t i = 0; i < mesh.size(); ++i) {
         Add(mesh[i]);
     }
+}
+
+void BoundingBox::Add(BoundingBox& box)
+{
+    Add(box.top);
+    Add(box.bottom);
 }
 
 float BoundingBox::HalfSurfaceArea()

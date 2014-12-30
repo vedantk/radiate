@@ -152,10 +152,8 @@ static float kd_eval_sah(Mesh& tris, float split, int axis)
         }
     }
 
-    whole.Add(leftbb.bottom);
-    whole.Add(leftbb.top);
-    whole.Add(rightbb.bottom);
-    whole.Add(rightbb.top);
+    whole.Add(leftbb);
+    whole.Add(rightbb);
 
     float SA_l = leftbb.HalfSurfaceArea();
     float SA_r = rightbb.HalfSurfaceArea();
@@ -188,7 +186,7 @@ static float kd_exact_sah(Mesh& tris, float& best_split, int& best_axis,
 }
 
 // (axis-posn, SAH-Cost(axis-posn))
-typedef pair<float, float> SampleSAH;
+typedef pair<float, float> SAHSample;
 
 static float poly_eval(float a, float b, float c, float x, float x1, float x2)
 {
@@ -209,7 +207,7 @@ static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
         float max_sah = -INFINITY;
 
         // Sample the axis interval evenly.
-        vector<SampleSAH> samples;
+        vector<SAHSample> samples;
         samples.reserve(KD_QUAD_SAMPLES * 3);
         for (int i = 1; i <= KD_QUAD_SAMPLES; ++i) {
             float pos = lo + i*alpha;
@@ -252,7 +250,7 @@ static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
 
         // Sort the samples by position for simpler interpolation.
         sort(samples.begin(), samples.end(),
-            [](const SampleSAH L, const SampleSAH R)
+            [](const SAHSample L, const SAHSample R)
             {
                 return L.first < R.first;
             });
