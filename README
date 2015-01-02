@@ -8,7 +8,6 @@ To do
 =====
 
 - KD-tree construction stack overflows: needs fix
-- Investigate inverted scanlines problem (freeimage)
 - Radiosity solver
 - Basic testing (e.g dragon, lucy, etc.)
 - Reflection stack
@@ -16,6 +15,7 @@ To do
 - Texture-map triangles
 - Load textures / lights from model files
 - Generating videos of iterative solutions
+- Investigate inverted scanlines problem (freeimage)
 
 References
 ==========

@@ -1,5 +1,5 @@
 CXX = g++
-DEBUG = -g -Werror
+DEBUG = -g
 NDEBUG = -DNDEBUG -Ofast
 CXXFLAGS = -std=c++11 -fopenmp -Wall -Wextra -I../ $(NDEBUG)
 LDFLAGS = -lstdc++ -lassimp -lboost_system -lfreeimage
@@ -20,8 +20,11 @@ build/%.o: %.cc $(HEADERS)
 clean:
 	rm -rf build
 
+.PHONY: test
 test: build/radiate
-	./test/render_*.sh
+	for file in test/render_*.sh; do \
+		./$$file; \
+	done
 
 all-dbg:
 	make clean
