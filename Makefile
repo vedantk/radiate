@@ -1,5 +1,5 @@
 CXX = g++
-DEBUG = -g
+DEBUG = -g -Werror
 NDEBUG = -DNDEBUG -Ofast
 CXXFLAGS = -std=c++11 -fopenmp -Wall -Wextra -I../ $(NDEBUG)
 LDFLAGS = -lstdc++ -lassimp -lboost_system -lfreeimage
@@ -23,9 +23,13 @@ clean:
 test: build/radiate
 	./test/render_*.sh
 
+all-dbg:
+	make clean
+	make NDEBUG="$(DEBUG)"
+
 all-pgo:
 	make clean
 	make NDEBUG="$(NDEBUG) -fprofile-generate -fprofile-correction"
 	make test
-	touch *.hh
+	touch $(HEADERS)
 	make NDEBUG="$(NDEBUG) -fprofile-use -fprofile-correction"
