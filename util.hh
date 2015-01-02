@@ -101,6 +101,10 @@ struct BoundingBox
     float HalfSurfaceArea();
 };
 
+void printb(BoundingBox& bbox);
+
+void printbln(BoundingBox& bbox);
+
 struct BoundingSphere
 {
     Point3f center;

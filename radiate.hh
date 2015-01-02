@@ -85,6 +85,8 @@ private:
     KDTree* kdtree; 
     Mesh mesh;
     BoundingBox* bbox;
+    Vector3f in;
+    Vector3f side;
 };
 
 }; // end namespace Radiate

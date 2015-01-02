@@ -68,7 +68,7 @@ public:
     ~KDTree();
 
     // Construct a KD-tree out of the given triangles.
-    void Create(Mesh& tris);
+    void Create(Mesh& tris, BoundingBox& bbox);
 
     // Return the first triangle the ray intersects, or nullptr.
     Triangle* Trace(Ray& ray, float* t);
@@ -78,7 +78,7 @@ private:
     uint64_t total_leaf_tris;
     std::vector<KDMetaNode> kd_vec;
 
-    void kd_build(uint32_t cur_idx, Mesh& tris);
+    void kd_build(uint32_t cur_idx, Mesh& tris, BoundingBox& bbox);
 
     Triangle* ray_trace(uint32_t cur_idx, Ray& ray, float* t);
 };

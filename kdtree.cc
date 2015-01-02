@@ -3,6 +3,7 @@
 #define KD_QUAD_SAMPLES     8
 #define NR_SEGMENTS         (KD_QUAD_SAMPLES + 1)
 #define KD_EXACT_THRESH     64
+#define KD_LEAF_THRESH      8
 
 using namespace std;
 
@@ -31,6 +32,7 @@ void KDNode::Destroy()
 {
     if (isLeaf()) {
         assert(tris);
+
         delete[] tris;
     }
 }
@@ -42,7 +44,7 @@ KDTree::~KDTree()
     }
 }
 
-void KDTree::Create(Mesh& tris)
+void KDTree::Create(Mesh& tris, BoundingBox& bbox)
 {
     size_t nr_tris = tris.size();
     size_t sz_estimate = 4 * nr_tris;
@@ -52,7 +54,7 @@ void KDTree::Create(Mesh& tris)
 
     kd_vec.reserve(sz_estimate);
     kd_vec.emplace_back(KDMetaNode());
-    kd_build(0, tris);
+    kd_build(0, tris, bbox);
 
     printf(":: kd-tree built with %zu nodes partitioning %zu triangles.\n",
             kd_vec.size(), nr_tris);
@@ -136,27 +138,27 @@ static float kd_eval_sah(Mesh& tris, float split, int axis)
 {
     size_t lcnt = 0;
     size_t rcnt = 0;
-    BoundingBox leftbb;
-    BoundingBox rightbb;
+    BoundingBox lbbox;
+    BoundingBox rbbox;
     BoundingBox whole;
 
     for (size_t i = 0; i < tris.size(); ++i) {
         Triangle* T = tris[i];
         if (kd_on_left(T, split, axis)) {
             ++lcnt;
-            leftbb.Add(T);
+            lbbox.Add(T);
         }
         if (kd_on_right(T, split, axis)) {
             ++rcnt;
-            rightbb.Add(T);
+            rbbox.Add(T);
         }
     }
 
-    whole.Add(leftbb);
-    whole.Add(rightbb);
+    whole.Add(lbbox);
+    whole.Add(rbbox);
 
-    float SA_l = leftbb.HalfSurfaceArea();
-    float SA_r = rightbb.HalfSurfaceArea();
+    float SA_l = lbbox.HalfSurfaceArea();
+    float SA_r = rbbox.HalfSurfaceArea();
     float SA_w = whole.HalfSurfaceArea();
     assert((isfinite(SA_l) && SA_w >= SA_l) || !isfinite(SA_l));
     assert((isfinite(SA_r) && SA_w >= SA_r) || !isfinite(SA_r));
@@ -166,7 +168,7 @@ static float kd_eval_sah(Mesh& tris, float split, int axis)
 
 // Minimize the SAH cost over the set of all axis splits in the mesh.
 static float kd_exact_sah(Mesh& tris, float& best_split, int& best_axis,
-                          BoundingBox& box)
+        BoundingBox& box)
 {
     float best_sah = INFINITY;
     Vector3f widths = box.top - box.bottom;
@@ -195,7 +197,7 @@ static float poly_eval(float a, float b, float c, float x, float x1, float x2)
 
 // Determine the SAH cost by minimizing piecewise quadratic functions.
 static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
-                            BoundingBox& box)
+        BoundingBox& box)
 {
     float best_sah = INFINITY;
     for (int axis = KD_X; axis < KD_NONE; ++axis) {
@@ -228,7 +230,7 @@ static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
         float sah_thresh = sah_range / NR_SEGMENTS;
         for (int i = 0; i < NR_SEGMENTS; ++i) {
             float prev_sah = i == 0 ?
-                             tris.size() : samples[i-1].second;
+                             tris.size() : samples[i - 1].second;
             float next_sah = i == KD_QUAD_SAMPLES ?
                              tris.size() : samples[i].second;
             int nr_extra = roundf(fabs(next_sah - prev_sah) / sah_thresh);
@@ -258,12 +260,12 @@ static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
         // Find extrema by interpolating point triples, update the best split.
         for (size_t i = 0; i <= samples.size() - 3; ++i) {
             float x1 = samples[i].first;
-            float x2 = samples[i+1].first;
-            float x3 = samples[i+2].first;
+            float x2 = samples[i + 1].first;
+            float x3 = samples[i + 2].first;
 
             float f1 = samples[i].second;
-            float f2 = samples[i+1].second;
-            float f3 = samples[i+2].second;
+            float f2 = samples[i + 1].second;
+            float f3 = samples[i + 2].second;
             float a = f1;
             float b = (f2 - f1) / (x2 - x1);
             float c = (f3 - f1 - b*(x3 - x1)) / ((x3 - x1) * (x3 - x2));
@@ -284,13 +286,14 @@ static float kd_quad_approx(Mesh& tris, float& best_split, int& best_axis,
 
 // Check if the mesh should be a leaf. If not, partition it.
 static bool kd_mesh_split(KDNode* cur, Mesh& tris, Mesh& right_tris,
-                          BoundingBox& bbox)
+        BoundingBox& bbox, BoundingBox* lbbox, BoundingBox* rbbox)
 {
-    float best_split = 0.f;
+    float best_sah;
+    float best_split = 0.0;
     int best_axis = KD_NONE;
-    float best_sah = INFINITY;
+    size_t nr_tris = tris.size();
 
-    if (tris.size() == 1) {
+    if (tris.size() <= KD_LEAF_THRESH) {
         return true;
     } else if (tris.size() <= KD_EXACT_THRESH) {
         best_sah = kd_exact_sah(tris, best_split, best_axis, bbox);
@@ -298,18 +301,33 @@ static bool kd_mesh_split(KDNode* cur, Mesh& tris, Mesh& right_tris,
         best_sah = kd_quad_approx(tris, best_split, best_axis, bbox);
     }
 
-    if (best_sah >= float(tris.size())) {
+    // Make a leaf if the split does not increase the expected hit rate.
+    if (best_sah >= nr_tris) {
         return true;
     }
+
+    assert(bbox.bottom[best_axis] <= best_split);
+    assert(bbox.top[best_axis] >= best_split);
 
     cur->parent.split_axis = best_axis;
     cur->parent.split_pos = best_split;
     right_tris.reserve(tris.size() / 2);
 
+    size_t lcnt = 0;
+    size_t rcnt = 0;
     for (size_t i = 0; i < tris.size(); ++i) {
         Triangle* T = tris[i];
         bool on_left = kd_on_left(T, best_split, best_axis);
-        bool on_right = kd_on_right(T, best_split, best_axis);
+        bool on_right = !on_left || kd_on_right(T, best_split, best_axis);
+
+        if (on_left) {
+            lbbox->Add(T);
+            ++lcnt;
+        }
+        if (on_right) {
+            rbbox->Add(T);
+            ++rcnt;
+        }
 
         if (on_right) {
             right_tris.push_back(T);
@@ -319,30 +337,37 @@ static bool kd_mesh_split(KDNode* cur, Mesh& tris, Mesh& right_tris,
                 tris.pop_back();
                 --i;
             }
-        } else {
-            assert(on_left);
-            continue;
         }
     }
 
-    assert(tris.size() != 0 && right_tris.size() != 0);
+    if (lcnt == nr_tris || rcnt == nr_tris) {
+        // Make sure all triangles in this node are in the original vector.
+        if (tris.size() != nr_tris) {
+            tris.swap(right_tris);
+        }
+        right_tris.clear();
+        return true;
+    }
+
+    assert(tris.size() != 0);
+    assert(right_tris.size() != 0);
     return false;
 }
 
 // Piece together internal and leaf nodes.
-void KDTree::kd_build(uint32_t cur_idx, Mesh& tris)
+void KDTree::kd_build(uint32_t cur_idx, Mesh& tris, BoundingBox& bbox)
 {
     assert(tris.size() > 0);
 
     Mesh right_tris;
-    BoundingBox bbox;
     KDMetaNode* node = &kd_vec[cur_idx];
     KDNode* cur = &node->kdsplit;
 
-    bbox.Add(tris);
     node->sphere.Add(bbox);
+    BoundingBox lbbox, rbbox;
 
-    bool make_leaf = kd_mesh_split(cur, tris, right_tris, bbox);
+    bool make_leaf = kd_mesh_split(cur, tris, right_tris, bbox, &lbbox,
+            &rbbox);
 
     if (make_leaf) {
         assert(right_tris.size() == 0);
@@ -366,8 +391,10 @@ void KDTree::kd_build(uint32_t cur_idx, Mesh& tris)
         cur->parent.left_index = kd_vec.size();
         kd_vec.emplace_back(KDMetaNode());
         kd_vec.emplace_back(KDMetaNode());
-        kd_build(cur->getLeftChild(), tris);
-        kd_build(cur->getRightChild(), right_tris);
+        kd_build(cur->getRightChild(), right_tris, rbbox);
+        right_tris.clear();
+        kd_build(cur->getLeftChild(), tris, lbbox);
+        tris.clear();
     }
 }
 

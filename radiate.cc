@@ -59,7 +59,9 @@ SceneManager::SceneManager()
       up(Vector3f(0, 1, 0)),
       do_orthographic(false),
       kdtree(nullptr),
-      bbox(nullptr)
+      bbox(nullptr),
+      in(ZEROV),
+      side(ZEROV)
 {
     bbox = new BoundingBox;
     pixbuf.Resize(height, width);
@@ -170,8 +172,8 @@ void SceneManager::setDimensions(int h, int w)
 
 bool SceneManager::checkViewConsistency()
 {
-    Vector3f in = window - eye;
-    Vector3f side = up.cross(in);
+    in = window - eye;
+    side = up.cross(in);
 
     return in.norm() > 0.0
         && fequal(in.dot(up), 0.0)
@@ -221,11 +223,9 @@ void SceneManager::Render()
 
     if (!kdtree) {
         kdtree = new KDTree;
-        kdtree->Create(mesh);
+        kdtree->Create(mesh, *bbox);
+        assert(!mesh.size());
     }
-
-    Vector3f in = window - eye;
-    Vector3f side = up.cross(in);
 
     in.normalize();
     side.normalize();
@@ -247,8 +247,7 @@ void SceneManager::Render()
     printf(" - up     = "); printvln(up);
     printf(" - eye    = "); printvln(eye);
     printf(" - window = "); printvln(window);
-    printf(" - bbox.B = "); printvln(bbox->bottom);
-    printf(" - bbox.T = "); printvln(bbox->top);
+    printf(" - bbox   = "); printbln(*bbox);
     printf(" - win.TL = "); printvln(TL);
     printf(" - win.up = "); printvln(half_vert);
     printf(" - win.-> = "); printvln(half_horiz);

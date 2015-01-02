@@ -25,6 +25,21 @@ void printvln(Vector3f& v)
     printf("\n");
 }
 
+void printb(BoundingBox& bbox)
+{
+    printf("Box{");
+    printv(bbox.bottom);
+    printf(" -> ");
+    printv(bbox.top);
+    printf("}");
+}
+
+void printbln(BoundingBox& bbox)
+{
+    printb(bbox);
+    printf("\n");
+}
+
 static boost::object_pool<Triangle> TrianglePool;
 
 void Triangle::Init(Triangle* T, Point3f _v1, Point3f _v2, Point3f _v3)
