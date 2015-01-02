@@ -1,10 +1,8 @@
 CXX = g++
-DEBUG_FLAGS = -g
-NDEBUG_FLAGS = -DNDEBUG -Ofast
-CXXFLAGS = -std=c++11 -fopenmp -Wall -Wextra -I../ $(NDEBUG_FLAGS)
+DEBUG = -g
+NDEBUG = -DNDEBUG -Ofast
+CXXFLAGS = -std=c++11 -fopenmp -Wall -Wextra -I../ $(NDEBUG)
 LDFLAGS = -lstdc++ -lassimp -lboost_system -lfreeimage
-GEN_PROFILE = -fprofile-generate="build/profile"
-USE_PROFILE = -fprofile-use="build/profile"
 OBJS = $(patsubst %.cc, build/%.o, $(wildcard *.cc))
 HEADERS = $(wildcard *.hh)
 
@@ -27,7 +25,7 @@ test: build/radiate
 
 all-pgo:
 	make clean
-	make NDEBUG_FLAGS="$(NDEBUG_FLAGS) $(GEN_PROFILE)"
+	make NDEBUG="$(NDEBUG) -fprofile-generate -fprofile-correction"
 	make test
-	make clean
-	make NDEBUG_FLAGS="$(NDEBUG_FLAGS) $(USE_PROFILE)"
+	touch *.hh
+	make NDEBUG="$(NDEBUG) -fprofile-use -fprofile-correction"
