@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -274,25 +276,24 @@ void SceneManager::Render()
             float t;
             Triangle* T = kdtree->Trace(ray, &t);
             if (T) {
-                Vector4f alight(0, 0, 128, 255);
-                Vector4f dlight(164, 0, 0, 255);
-                Vector4f slight(128, 0, 0, 255);
+                Vector4f alight(0, 0, 0, 255);
+                Vector4f dlight(0, 0, 0, 255);
+                Vector4f slight(0, 100, 0, 255);
                 Vector3f Lm = Vector3f(0, 0, -1);
                 float T_Lm = T->normal.dot(Lm);
-                float ambient = 0.35;
-                float diffuse = 0.65 * T_Lm;
-                Vector3f Rm = 2*T_Lm*T->normal - Lm;
-                float specular = powf(Rm.dot(-ray.D), 8.0);
+                float ambient = 0.25;
+                float diffuse = 0.55 * T_Lm;
+                Vector3f Rm = 2.0 * T_Lm * T->normal - Lm;
+                float specular = powf(Rm.dot(-ray.D), 2.0);
                 Vector4f color = (ambient * alight) + (diffuse * dlight)
                                + (specular * slight);
 
-                line[c].r = uint8_t(color[0]);
-                line[c].g = uint8_t(color[1]);
-                line[c].b = uint8_t(color[2]);
+                line[c].r = uint8_t(std::min(255.f, color[0]));
+                line[c].g = uint8_t(std::min(255.f, color[1]));
+                line[c].b = uint8_t(std::min(255.f, color[2]));
                 line[c].a = 255;
             } else {
-                line[c].r = 32;
-                line[c].g = line[c].b = 0;
+                line[c].r = line[c].g = line[c].b = 0;
                 line[c].a = 255;
             }
         }
