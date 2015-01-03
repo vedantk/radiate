@@ -7,8 +7,8 @@ Radiate is a primitive ray tracer, optimized for large triangle meshes. It
 To do
 =====
 
-- KD-tree construction stack overflows: needs fix
 - Radiosity solver
+- Anti-aliasing
 - Basic testing (e.g dragon, lucy, etc.)
 - Reflection stack
 - Phong shading, switch b/w ambient term & radiosity

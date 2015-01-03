@@ -32,7 +32,6 @@ void KDNode::Destroy()
 {
     if (isLeaf()) {
         assert(tris);
-
         delete[] tris;
     }
 }
