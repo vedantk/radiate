@@ -7,8 +7,8 @@ Radiate is a primitive ray tracer, optimized for large triangle meshes. It
 To do
 =====
 
+- triangles use too much space: recycle aiScene
 - Radiosity solver
-- Anti-aliasing
 - Basic testing (e.g dragon, lucy, etc.)
 - Reflection stack
 - Phong shading, switch b/w ambient term & radiosity

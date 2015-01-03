@@ -1,3 +1,4 @@
+#include <random>
 #include <algorithm>
 
 #include <assimp/scene.h>
@@ -8,6 +9,8 @@
 
 #include "radiate/kdtree.hh"
 #include "radiate/radiate.hh"
+
+#define NR_ALIAS_RAYS       25
 
 namespace Radiate
 {
@@ -257,6 +260,9 @@ void SceneManager::Render()
     printf(" - d/pix  = %.9f\n", per_pixel);
     printf("--------------------------------------------------------------\n");
 
+    std::default_random_engine randgen;
+    std::uniform_real_distribution<float> randf(-0.3, 0.3);
+
     float last_pctg = 0.0;
     for (int r = 0; r < height; ++r) {
         float pctg = (100.0 * r) / height;
@@ -271,31 +277,36 @@ void SceneManager::Render()
         for (int c = 0; c < width; ++c) {
             Point3f cell = TL + (c * horiz_step) + (r * vert_step);
             Point3f& source = do_orthographic ? window : cell;
-            Ray ray = Ray(cell, source - eye);
 
-            float t;
-            Triangle* T = kdtree->Trace(ray, &t);
-            if (T) {
-                Vector4f alight(0, 0, 0, 255);
-                Vector4f dlight(0, 0, 0, 255);
-                Vector4f slight(0, 100, 0, 255);
-                Vector3f Lm = Vector3f(0, 0, -1);
-                float T_Lm = T->normal.dot(Lm);
-                float ambient = 0.25;
-                float diffuse = 0.55 * T_Lm;
-                Vector3f Rm = 2.0 * T_Lm * T->normal - Lm;
-                float specular = powf(Rm.dot(-ray.D), 2.0);
-                Vector4f color = (ambient * alight) + (diffuse * dlight)
-                               + (specular * slight);
+            Vector3f color = ZEROV;
+            for (int a = 0; a < NR_ALIAS_RAYS; ++a) {
+                Point3f rcell = cell;
+                rcell += randf(randgen) * vert_step;
+                rcell += randf(randgen) * horiz_step;
+                Ray ray = Ray(rcell, source - eye);
 
-                line[c].r = uint8_t(std::min(255.f, color[0]));
-                line[c].g = uint8_t(std::min(255.f, color[1]));
-                line[c].b = uint8_t(std::min(255.f, color[2]));
-                line[c].a = 255;
-            } else {
-                line[c].r = line[c].g = line[c].b = 0;
-                line[c].a = 255;
+                float t;
+                Triangle* T = kdtree->Trace(ray, &t);
+                if (T) {
+                    Vector3f alight(0, 0, 0);
+                    Vector3f dlight(0, 0, 0);
+                    Vector3f slight(0, 100, 0);
+                    Vector3f Lm = Vector3f(0, 0, -1);
+                    float T_Lm = T->normal.dot(Lm);
+                    float ambient = 0.25;
+                    float diffuse = 0.55 * T_Lm;
+                    Vector3f Rm = 2.0 * T_Lm * T->normal - Lm;
+                    float specular = powf(Rm.dot(-ray.D), 2.0);
+                    color += (ambient * alight) + (diffuse * dlight)
+                        + (specular * slight);
+                }
             }
+
+            color /= NR_ALIAS_RAYS;
+            line[c].r = uint8_t(std::min(255.f, color[0]));
+            line[c].g = uint8_t(std::min(255.f, color[1]));
+            line[c].b = uint8_t(std::min(255.f, color[2]));
+            line[c].a = 255;
         }
     }
 }

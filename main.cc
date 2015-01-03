@@ -14,7 +14,7 @@ static void usage(char* prgm)
                     "    [-out       <output-file>]\n"
                     "    [-width     <img-pixel-width = 1920>]\n"
                     "    [-height    <img-pixel-height = 1080>]\n"
-                    "    [-focal     <focal-ratio = 0.01>]\n"
+                    "    [-focal     <focal-ratio = 0.05>]\n"
                     "    [-per-pixel <pixel-to-world = auto]\n"
                     "    [-eye       <camera-origin (x, y, z) = auto]\n"
                     "    [-window    <window-origin (x, y, z) = auto]\n"
